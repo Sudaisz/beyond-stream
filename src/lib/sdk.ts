@@ -1,3 +1,5 @@
+import "server-only";
+
 import {
   HttpClient,
   AnilistMeta,
@@ -8,6 +10,8 @@ import {
   AnikotoProvider,
   GogoanimeProvider,
 } from "anime-sdk";
+
+import type { ProviderId } from "./providers";
 
 const http = new HttpClient({ timeoutMs: 25_000 });
 const mapping = new MappingClient(http);
@@ -21,16 +25,6 @@ export const providers = {
   anikoto: new AnikotoProvider(http),
   gogoanime: new GogoanimeProvider(http),
 } as const;
-
-export type ProviderId = keyof typeof providers;
-
-export const PROVIDER_LIST: { id: ProviderId; label: string }[] = [
-  { id: "megaplay", label: "MegaPlay" },
-  { id: "allmanga", label: "AllManga" },
-  { id: "animeparadise", label: "AnimeParadise" },
-  { id: "anikoto", label: "AniKoto" },
-  { id: "gogoanime", label: "GogoAnime" },
-];
 
 export function getProvider(id: string) {
   const p = providers[id as ProviderId];
