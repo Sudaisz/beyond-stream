@@ -20,12 +20,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         results.map((r) => ({
           id: r.id,
-          title: r.title?.english || r.title?.romaji || r.title?.native || "Unknown",
-          image: r.coverImage?.large || r.coverImage?.medium,
-          catalogType: "ANIME",
-          score: r.averageScore,
-          status: r.status,
-          year: r.seasonYear,
+          title:
+            r.title?.english ||
+            r.title?.romaji ||
+            r.title?.userPreferred ||
+            r.title?.native ||
+            "Unknown",
+          image: r.cover?.large || r.cover?.medium || r.cover?.small,
+          catalogType: r.catalogType || "ANIME",
+          score: (r as any).score,
+          status: (r as any).status,
+          year: (r as any).year,
         }))
       );
     }
@@ -38,6 +43,7 @@ export async function GET(req: NextRequest) {
         .map((r) => ({
           id: r.id,
           title: r.title,
+          image: r.thumbnailUrl,
           catalogType: r.catalogType || "ANIME",
           availableLanguages: r.availableLanguages,
         }))
