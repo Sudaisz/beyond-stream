@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search as SearchIcon } from "lucide-react";
 import { AnimeCard } from "@/components/AnimeCard";
-import { PROVIDER_LIST } from "@/lib/sdk";
+import { PROVIDER_LIST } from "@/lib/providers";
 
 type Result = {
   id: string;
