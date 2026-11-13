@@ -16,9 +16,16 @@ export async function GET(req: NextRequest) {
 
   try {
     if (useMeta) {
-      const results = await meta.search(q, { catalogType: "ANIME" });
+      // CallOptions has no catalogType — filter results after search
+      const results = await meta.search(q);
+      const anime = results.filter(
+        (r) =>
+          r.catalogType === "ANIME" ||
+          r.catalogType === "TV" ||
+          r.catalogType === "MOVIE"
+      );
       return NextResponse.json(
-        results.map((r) => ({
+        anime.map((r) => ({
           id: r.id,
           title:
             r.title?.english ||
