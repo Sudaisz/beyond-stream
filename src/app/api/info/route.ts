@@ -19,22 +19,23 @@ export async function GET(req: NextRequest) {
       title:
         info.title?.english ||
         info.title?.romaji ||
+        info.title?.userPreferred ||
         info.title?.native ||
         "Unknown",
       titleRomaji: info.title?.romaji,
       titleNative: info.title?.native,
-      image: info.coverImage?.large || info.coverImage?.medium,
-      banner: info.bannerImage,
+      image: info.cover?.large || info.cover?.medium || info.cover?.small,
+      banner: info.banner,
       description: info.description?.replace(/<[^>]+>/g, "") || "",
-      score: info.averageScore,
+      score: info.score,
       status: info.status,
-      episodes: info.episodes,
-      duration: info.duration,
-      year: info.seasonYear,
+      episodes: info.episodeCount,
+      duration: info.durationMinutes,
+      year: info.year,
       season: info.season,
       format: info.format,
       genres: info.genres || [],
-      studios: info.studios?.map((s: any) => s.name) || [],
+      studios: info.studios || [],
       streamingEpisodes: info.streamingEpisodes || [],
     });
   } catch (err: any) {
