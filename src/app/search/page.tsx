@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search as SearchIcon } from "lucide-react";
 import { AnimeCard } from "@/components/AnimeCard";
@@ -16,7 +16,7 @@ type Result = {
   year?: number;
 };
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter();
   const sp = useSearchParams();
   const initialQ = sp.get("q") || "";
@@ -152,5 +152,19 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-[var(--muted)]">
+          Loading search...
+        </div>
+      }
+    >
+      <SearchContent />
+    </Suspense>
   );
 }
