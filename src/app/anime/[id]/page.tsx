@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,7 +36,7 @@ type Episode = {
   availableLanguages: string[];
 };
 
-export default function AnimePage() {
+function AnimeContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -290,5 +290,19 @@ export default function AnimePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AnimePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+        </div>
+      }
+    >
+      <AnimeContent />
+    </Suspense>
   );
 }
