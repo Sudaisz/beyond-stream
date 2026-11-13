@@ -10,7 +10,7 @@ import {
   removeFavorite,
   isFavorite,
 } from "@/lib/storage";
-import { PROVIDER_LIST, type ProviderId } from "@/lib/sdk";
+import { PROVIDER_LIST, type ProviderId } from "@/lib/providers";
 
 type Info = {
   id: string;
@@ -233,9 +233,7 @@ export default function AnimePage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-medium text-[var(--muted)]">
-          Source
-        </h2>
+        <h2 className="mb-3 text-sm font-medium text-[var(--muted)]">Source</h2>
         <div className="flex flex-wrap gap-2">
           {PROVIDER_LIST.map((p) => (
             <button
