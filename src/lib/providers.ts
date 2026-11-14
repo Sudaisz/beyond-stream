@@ -1,14 +1,24 @@
 export type ProviderId =
-  | "megaplay"
-  | "allmanga"
   | "animeparadise"
+  | "allmanga"
+  | "gogoanime"
   | "anikoto"
-  | "gogoanime";
+  | "megaplay";
 
-export const PROVIDER_LIST: { id: ProviderId; label: string }[] = [
-  { id: "megaplay", label: "MegaPlay" },
-  { id: "allmanga", label: "AllManga" },
-  { id: "animeparadise", label: "AnimeParadise" },
-  { id: "anikoto", label: "AniKoto" },
-  { id: "gogoanime", label: "GogoAnime" },
+/** Prefer AnimeParadise — currently the most reliable stream source. */
+export const PROVIDER_LIST: {
+  id: ProviderId;
+  label: string;
+  serverLabel: string;
+}[] = [
+  { id: "animeparadise", label: "AnimeParadise", serverLabel: "HD-1" },
+  { id: "allmanga", label: "AllManga", serverLabel: "HD-2" },
+  { id: "gogoanime", label: "GogoAnime", serverLabel: "HD-3" },
+  { id: "anikoto", label: "AniKoto", serverLabel: "HD-4" },
+  { id: "megaplay", label: "MegaPlay", serverLabel: "HD-5" },
 ];
+
+export const DEFAULT_PROVIDER: ProviderId = "animeparadise";
+
+/** Order used when auto-trying sources after a failure. */
+export const FALLBACK_ORDER: ProviderId[] = PROVIDER_LIST.map((p) => p.id);
