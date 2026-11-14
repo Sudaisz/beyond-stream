@@ -3,6 +3,64 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+function isBlockedHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "[::1]"
+  ) {
+    return true;
+  }
+  if (host.startsWith("10.") || host.startsWith("192.168.") || host.startsWith("169.254.")) {
+    return true;
+  }
+  // 172.16.0.0 – 172.31.255.255
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
+  return false;
+}
+
+function proxyLine(target: string, h: string | null) {
+  return `/api/proxy?url=${encodeURIComponent(target)}${h ? `&h=${h}` : ""}`;
+}
+
+function rewritePlaylist(text: string, baseUrl: string, h: string | null) {
+  const base = new URL(baseUrl);
+
+  const toAbsolute = (ref: string) => {
+    try {
+      return new URL(ref, base).href;
+    } catch {
+      return ref;
+    }
+  };
+
+  return text
+    .split("\n")
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return line;
+
+      // Rewrite URI="..." attributes inside tags (KEY, MAP, MEDIA, I-FRAME, etc.)
+      if (trimmed.startsWith("#") && /URI="[^"]+"/i.test(trimmed)) {
+        return trimmed.replace(/URI="([^"]+)"/gi, (_m, uri: string) => {
+          if (uri.startsWith("/api/proxy")) return `URI="${uri}"`;
+          return `URI="${proxyLine(toAbsolute(uri), h)}"`;
+        });
+      }
+
+      if (trimmed.startsWith("#")) return line;
+
+      // Already proxied
+      if (trimmed.startsWith("/api/proxy")) return line;
+
+      const absolute = toAbsolute(trimmed);
+      return proxyLine(absolute, h);
+    })
+    .join("\n");
+}
+
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
   const h = req.nextUrl.searchParams.get("h");
@@ -22,9 +80,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const parsed = new URL(url);
-    const host = parsed.hostname.toLowerCase();
-    const blocked = ["localhost", "127.0.0.1", "0.0.0.0", "10.", "192.168."];
-    if (blocked.some((b) => host.startsWith(b) || host === b)) {
+    if (isBlockedHost(parsed.hostname)) {
       return NextResponse.json({ error: "Blocked host" }, { status: 403 });
     }
   } catch {
@@ -34,9 +90,10 @@ export async function GET(req: NextRequest) {
   try {
     const upstream = await fetch(url, {
       headers: {
-        ...headers,
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "*/*",
+        ...headers,
       },
       redirect: "follow",
     });
@@ -49,48 +106,31 @@ export async function GET(req: NextRequest) {
 
     const contentType =
       upstream.headers.get("content-type") || "application/octet-stream";
+    const ct = contentType.toLowerCase();
 
-    if (
-      contentType.includes("mpegurl") ||
-      contentType.includes("m3u8") ||
-      url.includes(".m3u8")
-    ) {
-      let text = await upstream.text();
-      const base = new URL(url);
-      text = text
-        .split("\n")
-        .map((line) => {
-          const trimmed = line.trim();
-          if (
-            !trimmed ||
-            trimmed.startsWith("#") ||
-            trimmed.startsWith("http")
-          ) {
-            if (trimmed.startsWith("http")) {
-              return `/api/proxy?url=${encodeURIComponent(trimmed)}${
-                h ? `&h=${h}` : ""
-              }`;
-            }
-            return line;
-          }
-          const absolute = new URL(trimmed, base).href;
-          return `/api/proxy?url=${encodeURIComponent(absolute)}${
-            h ? `&h=${h}` : ""
-          }`;
-        })
-        .join("\n");
+    // Peek body for playlist sniffing when content-type is wrong/missing
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    const head = buf.subarray(0, 64).toString("utf8").trimStart();
+    const looksLikePlaylist =
+      head.startsWith("#EXTM3U") ||
+      ct.includes("mpegurl") ||
+      ct.includes("m3u8") ||
+      /\/m3u8(\?|$)/i.test(url) ||
+      /\.m3u8(\?|$)/i.test(url);
 
-      return new NextResponse(text, {
+    if (looksLikePlaylist) {
+      const text = buf.toString("utf8");
+      const rewritten = rewritePlaylist(text, url, h);
+      return new NextResponse(rewritten, {
         headers: {
           "Content-Type": "application/vnd.apple.mpegurl",
           "Access-Control-Allow-Origin": "*",
-          "Cache-Control": "public, max-age=30",
+          "Cache-Control": "public, max-age=15",
         },
       });
     }
 
-    const body = upstream.body;
-    return new NextResponse(body, {
+    return new NextResponse(buf, {
       headers: {
         "Content-Type": contentType,
         "Access-Control-Allow-Origin": "*",
