@@ -10,7 +10,11 @@ import {
   removeFavorite,
   isFavorite,
 } from "@/lib/storage";
-import { PROVIDER_LIST, type ProviderId } from "@/lib/providers";
+import {
+  PROVIDER_LIST,
+  DEFAULT_PROVIDER,
+  type ProviderId,
+} from "@/lib/providers";
 
 type Info = {
   id: string;
@@ -46,7 +50,7 @@ function AnimeContent() {
   const [info, setInfo] = useState<Info | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [provider, setProvider] = useState<ProviderId>(
-    providerParam || "megaplay"
+    providerParam || DEFAULT_PROVIDER
   );
   const [loading, setLoading] = useState(true);
   const [epLoading, setEpLoading] = useState(false);
@@ -245,7 +249,7 @@ function AnimeContent() {
                   : "border-[var(--card-border)] text-[var(--muted)] hover:border-brand-500/40"
               }`}
             >
-              {p.label}
+              {p.serverLabel} · {p.label}
             </button>
           ))}
         </div>
